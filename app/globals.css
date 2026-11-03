@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — Hilda Macedo Imóveis.
+ * Tailwind v4 lê os tokens diretamente do CSS (@theme), substituindo o antigo
+ * tailwind.config.js. Cada token gera utilitários: bg-sand, text-charcoal, etc.
+ */
+@theme {
+  --color-sand: #c4b49f;
+  --color-sand-light: #e7dfd4;
+  --color-sand-dark: #8f7e68;
+  --color-charcoal: #1a1a1a;
+  --color-offwhite: #f9f8f6;
+  --color-surface: #ffffff;
+  --color-muted: #6b6b6b;
+  --color-line: #e8e4de;
+
+  --color-success: #3f7d58;
+  --color-warning: #b7791f;
+  --color-danger: #b23b3b;
+
+  /* Séries de gráficos — validadas (contraste, croma e daltonismo) sobre fundo claro */
+  --color-chart-1: #a8742e;
+  --color-chart-2: #3d6fb0;
+
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-up: fade-up 0.7s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-offwhite text-charcoal font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif tracking-tight;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-sand-dark;
+  }
+
+  ::selection {
+    @apply bg-sand-light text-charcoal;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-[0.25em] text-sand-dark;
+  }
+
+  .select-chevron {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f7e68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+}
+
+/* React Toastify — alinhado à paleta da marca */
+:root {
+  --toastify-color-success: var(--color-success);
+  --toastify-color-error: var(--color-danger);
+  --toastify-color-warning: var(--color-warning);
+  --toastify-color-info: var(--color-sand-dark);
+  --toastify-font-family: var(--font-sans);
+  --toastify-text-color-light: var(--color-charcoal);
+}
