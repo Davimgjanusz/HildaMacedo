@@ -2,8 +2,10 @@ import { AlertTriangle, CircleDollarSign, Clock, Plug, Receipt } from "lucide-re
 import { IssueInvoiceForm, MarkPaidButton, ReconcileButton } from "@/components/dashboard/finance-actions";
 import { DataTable } from "@/components/ui/data-table";
 import { FilterTabs } from "@/components/ui/filter-tabs";
+import { Pagination } from "@/components/ui/pagination";
 import { Badge, Card, CardHeader, EmptyState, PageHeader, StatCard } from "@/components/ui/primitives";
 import { getToday } from "@/lib/dates";
+import { paginate, parsePage } from "@/lib/pagination";
 import { effectiveStatus, getContracts, getInvoices } from "@/lib/data/finance";
 import { formatBRL, formatCompetencia, formatDate, statusBoletoLabel } from "@/lib/format";
 import { getSantanderMode } from "@/lib/santander/client";
@@ -40,7 +42,8 @@ function nextCompetencia(today) {
     return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
 }
 export default async function FinanceiroPage({ searchParams }) {
-    const [{ status }, today, invoices, contracts] = await Promise.all([searchParams, getToday(), getInvoices(), getContracts()]);
+    const [query, today, invoices, contracts] = await Promise.all([searchParams, getToday(), getInvoices(), getContracts()]);
+    const status = query.status;
     const mode = getSantanderMode();
     const rows = invoices.map((i) => ({
         ...i,
@@ -53,6 +56,7 @@ export default async function FinanceiroPage({ searchParams }) {
     const pagosMes = rows.filter((r) => r.status === "pago" && r.pagoEm?.slice(0, 7) === today.slice(0, 7));
     const active = status === "pendente" || status === "vencido" || status === "pago" ? status : "todos";
     const visible = active === "todos" ? rows : rows.filter((r) => r.efetivo === active);
+    const paged = paginate(visible, parsePage(query.pagina));
     return (<>
       <PageHeader eyebrow="Financeiro" title="Boletos e Pix" description="Emissão de cobranças, acompanhamento de pagamentos e conciliação bancária." action={<div className="flex flex-wrap items-center gap-3">
             <Badge tone={mode === "production" ? "success" : "sand"}>
@@ -79,10 +83,11 @@ export default async function FinanceiroPage({ searchParams }) {
         ]}/>
           </div>
           <Card>
-            <DataTable rows={visible} columns={columns} rowKey={(i) => i.id} caption="Boletos emitidos" cardTitle={(i) => (<div>
+            <DataTable rows={paged.items} columns={columns} rowKey={(i) => i.id} caption="Boletos emitidos" cardTitle={(i) => (<div>
                   <p className="font-medium">{i.inquilino}</p>
                   <p className="text-xs text-muted">Nosso nº {i.nossoNumero}</p>
                 </div>)} empty={<EmptyState icon={Receipt} title="Nenhum boleto neste filtro"/>}/>
+            <Pagination pagination={paged} basePath="/admin/financeiro" query={query} itemLabel="boletos"/>
           </Card>
         </div>
 

@@ -4,9 +4,11 @@ import { Building2, ExternalLink, Pencil, Plus } from "lucide-react";
 import { DeletePropertyButton } from "@/components/dashboard/delete-property-button";
 import { buttonClasses } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { Pagination } from "@/components/ui/pagination";
 import { Badge, Card, EmptyState, PageHeader } from "@/components/ui/primitives";
 import { getProperties } from "@/lib/data/properties";
 import { finalidadeLabel, formatPrice, statusImovelLabel, tipoLabel } from "@/lib/format";
+import { paginate, parsePage } from "@/lib/pagination";
 export const metadata = { title: "Imóveis" };
 const statusTone = {
     disponivel: "success",
@@ -45,15 +47,17 @@ const columns = [
       </div>),
     },
 ];
-export default async function AdminImoveisPage() {
-    const properties = await getProperties();
+export default async function AdminImoveisPage({ searchParams }) {
+    const [query, all] = await Promise.all([searchParams, getProperties()]);
+    const paged = paginate(all, parsePage(query.pagina));
     return (<>
-      <PageHeader eyebrow="Portfólio" title="Imóveis" description={`${properties.length} imóveis cadastrados.`} action={<Link href="/admin/imoveis/novo" className={buttonClasses("primary", "md")}>
+      <PageHeader eyebrow="Portfólio" title="Imóveis" description={`${all.length} imóveis cadastrados.`} action={<Link href="/admin/imoveis/novo" className={buttonClasses("primary", "md")}>
             <Plus className="size-4" aria-hidden/>
             Novo imóvel
           </Link>}/>
       <Card>
-        <DataTable rows={properties} columns={columns} rowKey={(p) => p.id} caption="Imóveis cadastrados" cardTitle={(p) => <Thumb p={p}/>} empty={<EmptyState icon={Building2} title="Nenhum imóvel cadastrado"/>}/>
+        <DataTable rows={paged.items} columns={columns} rowKey={(p) => p.id} caption="Imóveis cadastrados" cardTitle={(p) => <Thumb p={p}/>} empty={<EmptyState icon={Building2} title="Nenhum imóvel cadastrado"/>}/>
+        <Pagination pagination={paged} basePath="/admin/imoveis" query={query} itemLabel="imóveis"/>
       </Card>
     </>);
 }

@@ -1,14 +1,17 @@
 import { Wrench } from "lucide-react";
 import { TicketForm } from "@/components/dashboard/ticket-form";
+import { Pagination } from "@/components/ui/pagination";
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/primitives";
 import { requireRole } from "@/lib/auth/dal";
 import { getTickets } from "@/lib/data/portal";
 import { categoriaChamadoLabel, formatDate, prioridadeLabel, statusChamadoLabel } from "@/lib/format";
+import { paginate, parsePage } from "@/lib/pagination";
 export const metadata = { title: "Chamados" };
 const tone = { aberto: "danger", em_andamento: "warning", concluido: "success" };
-export default async function ChamadosPage() {
+export default async function ChamadosPage({ searchParams }) {
     const user = await requireRole("tenant");
-    const tickets = await getTickets({ inquilinoId: user.id });
+    const [query, tickets] = await Promise.all([searchParams, getTickets({ inquilinoId: user.id })]);
+    const paged = paginate(tickets, parsePage(query.pagina));
     return (<>
       <PageHeader eyebrow="Suporte" title="Chamados de manutenção" description="Abra uma solicitação e acompanhe o atendimento."/>
 
@@ -21,7 +24,8 @@ export default async function ChamadosPage() {
         <Card className="self-start">
           <CardHeader title="Meus chamados"/>
           {tickets.length === 0 ? (<EmptyState icon={Wrench} title="Nenhum chamado aberto"/>) : (<ul className="divide-y divide-line">
-              {tickets.map((t) => (<li key={t.id} className="flex flex-col gap-2 px-5 py-4 sm:px-6">
+              {paged.items.map((t) => (<li key={t.id} className="flex flex-col gap-2 px-5 py-4 sm:px-6">
+
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium">{t.titulo}</p>
                     <Badge tone={tone[t.status]}>{statusChamadoLabel[t.status]}</Badge>
@@ -32,6 +36,7 @@ export default async function ChamadosPage() {
                   </p>
                 </li>))}
             </ul>)}
+          <Pagination pagination={paged} basePath="/portal/tenant/chamados" query={query} itemLabel="chamados"/>
         </Card>
       </div>
     </>);

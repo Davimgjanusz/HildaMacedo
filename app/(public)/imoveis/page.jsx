@@ -6,9 +6,14 @@ import { z } from "zod";
 import { PropertyCard } from "@/components/public/property-card";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/form-controls";
+import { Pagination } from "@/components/ui/pagination";
 import { EmptyState, Skeleton } from "@/components/ui/primitives";
 import { searchProperties } from "@/lib/data/properties";
 import { cn } from "@/lib/cn";
+import { paginate, parsePage } from "@/lib/pagination";
+
+// Número de imóveis por página na vitrine (múltiplo de 3 para formar linhas completas).
+const PUBLIC_PAGE_SIZE = 9;
 export const metadata = {
     title: "Imóveis à venda e para locação",
     description: "Apartamentos, casas e coberturas de alto padrão para comprar ou alugar.",
@@ -38,8 +43,11 @@ export default function ImoveisPage({ searchParams }) {
     </div>);
 }
 async function Results({ searchParams }) {
-    const filters = parseFilters(await searchParams);
-    const properties = await searchProperties(filters);
+    const query = await searchParams;
+    const filters = parseFilters(query);
+    const all = await searchProperties(filters);
+    const paged = paginate(all, parsePage(query.pagina), PUBLIC_PAGE_SIZE);
+    const properties = paged.items;
     return (<div className="grid gap-8 lg:grid-cols-[280px_1fr] lg:gap-12">
       <aside>
         <details className="group rounded-2xl border border-line bg-surface lg:open:border-line" open>
@@ -56,15 +64,18 @@ async function Results({ searchParams }) {
 
       <section aria-live="polite" aria-label="Resultados da busca">
         <p className="mb-6 text-sm text-muted">
-          {properties.length} {properties.length === 1 ? "imóvel encontrado" : "imóveis encontrados"}
+          {all.length} {all.length === 1 ? "imóvel encontrado" : "imóveis encontrados"}
         </p>
-        {properties.length === 0 ? (<div className="rounded-2xl border border-line bg-surface">
+        {all.length === 0 ? (<div className="rounded-2xl border border-line bg-surface">
             <EmptyState icon={SearchX} title="Nenhum imóvel encontrado" description="Ajuste os filtros ou fale com nossa equipe — temos opções fora do portfólio público." action={<Link href="/imoveis" className={buttonClasses("outline", "sm")}>
                   Limpar filtros
                 </Link>}/>
           </div>) : (<div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {properties.map((p) => (<PropertyCard key={p.id} property={p}/>))}
           </div>)}
+        <div className="mt-10">
+          <Pagination pagination={paged} basePath="/imoveis" query={query} itemLabel="imóveis"/>
+        </div>
       </section>
     </div>);
 }

@@ -2,11 +2,13 @@ import QRCode from "qrcode";
 import { Barcode, CheckCircle2, QrCode } from "lucide-react";
 import { CopyButton } from "@/components/ui/copy-button";
 import { DataTable } from "@/components/ui/data-table";
+import { Pagination } from "@/components/ui/pagination";
 import { Badge, Card, CardHeader, PageHeader } from "@/components/ui/primitives";
 import { requireRole } from "@/lib/auth/dal";
 import { getToday } from "@/lib/dates";
 import { effectiveStatus, getInvoices, updatedAmount } from "@/lib/data/finance";
 import { formatBRL, formatCompetencia, formatDate } from "@/lib/format";
+import { paginate, parsePage } from "@/lib/pagination";
 import { buildPixCopiaECola } from "@/lib/santander/codes";
 export const metadata = { title: "Boletos e Pix" };
 const historyColumns = [
@@ -16,11 +18,12 @@ const historyColumns = [
     { header: "Valor", cell: (i) => <span className="tabular-nums">{formatBRL(i.valor, true)}</span> },
     { header: "Status", cell: () => <Badge tone="success">Pago</Badge> },
 ];
-export default async function BoletosPage() {
+export default async function BoletosPage({ searchParams }) {
     const user = await requireRole("tenant");
-    const [today, invoices] = await Promise.all([getToday(), getInvoices({ inquilinoId: user.id })]);
+    const [query, today, invoices] = await Promise.all([searchParams, getToday(), getInvoices({ inquilinoId: user.id })]);
     const abertos = invoices.filter((i) => i.status === "pendente").sort((a, b) => a.vencimento.localeCompare(b.vencimento));
     const pagos = invoices.filter((i) => i.status === "pago");
+    const paged = paginate(pagos, parsePage(query.pagina));
     return (<>
       <PageHeader eyebrow="Financeiro" title="Boletos e Pix" description="Gere a 2ª via, copie a linha digitável ou pague instantaneamente com Pix."/>
 
@@ -35,7 +38,8 @@ export default async function BoletosPage() {
 
       <Card className="mt-8">
         <CardHeader title="Histórico de pagamentos"/>
-        <DataTable rows={pagos} columns={historyColumns} rowKey={(i) => i.id} caption="Histórico de pagamentos" cardTitle={(i) => <p className="font-medium">Aluguel {formatCompetencia(i.competencia)}</p>}/>
+        <DataTable rows={paged.items} columns={historyColumns} rowKey={(i) => i.id} caption="Histórico de pagamentos" cardTitle={(i) => <p className="font-medium">Aluguel {formatCompetencia(i.competencia)}</p>}/>
+        <Pagination pagination={paged} basePath="/portal/tenant/boletos" query={query} itemLabel="pagamentos"/>
       </Card>
     </>);
 }

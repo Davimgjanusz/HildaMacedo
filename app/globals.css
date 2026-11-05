@@ -60,6 +60,15 @@
     @apply outline-2 outline-offset-2 outline-sand-dark;
   }
 
+  /* Cursor de mãozinha em botões e links (exceto os desabilitados). */
+  a[href],
+  area[href],
+  summary,
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
   ::selection {
     @apply bg-sand-light text-charcoal;
   }

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { FileSignature, Wrench } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { FilterTabs } from "@/components/ui/filter-tabs";
+import { Pagination } from "@/components/ui/pagination";
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/primitives";
 import { getToday } from "@/lib/dates";
+import { paginate, parsePage } from "@/lib/pagination";
 import { getContracts } from "@/lib/data/finance";
 import { getTickets } from "@/lib/data/portal";
 import { getProperties } from "@/lib/data/properties";
@@ -61,7 +63,7 @@ const ticketColumns = [
     { header: "Status", cell: (t) => <Badge tone={ticketTone[t.status]}>{statusChamadoLabel[t.status]}</Badge> },
 ];
 export default async function ContratosPage({ searchParams }) {
-    const [{ filtro }, today, contracts, properties, tickets] = await Promise.all([
+    const [query, today, contracts, properties, tickets] = await Promise.all([
         searchParams,
         getToday(),
         getContracts(),
@@ -76,8 +78,10 @@ export default async function ContratosPage({ searchParams }) {
     }));
     const vencendo = rows.filter((r) => r.diasFim >= 0 && r.diasFim <= 60);
     const seguro = rows.filter((r) => r.diasSeguro <= 30);
-    const active = filtro === "vencendo" || filtro === "seguro" ? filtro : "todos";
+    const active = query.filtro === "vencendo" || query.filtro === "seguro" ? query.filtro : "todos";
     const visible = active === "vencendo" ? vencendo : active === "seguro" ? seguro : rows;
+    const contratosPg = paginate(visible, parsePage(query.pagina));
+    const chamadosPg = paginate(tickets, parsePage(query.paginaChamados));
     return (<>
       <PageHeader eyebrow="Locações" title="Contratos" description="Controle de vigência, reajustes e seguros."/>
 
@@ -90,18 +94,20 @@ export default async function ContratosPage({ searchParams }) {
       </div>
 
       <Card>
-        <DataTable rows={visible} columns={columns} rowKey={(r) => r.id} caption="Contratos de locação" cardTitle={(c) => (<div>
+        <DataTable rows={contratosPg.items} columns={columns} rowKey={(r) => r.id} caption="Contratos de locação" cardTitle={(c) => (<div>
               <p className="font-medium">{c.inquilinoNome}</p>
               <p className="text-xs text-muted">{c.id} · {c.imovel}</p>
             </div>)} empty={<EmptyState icon={FileSignature} title="Nenhum contrato neste filtro"/>}/>
+        <Pagination pagination={contratosPg} basePath="/admin/contratos" query={query} itemLabel="contratos"/>
       </Card>
 
       <Card id="chamados" className="mt-8 scroll-mt-24">
         <CardHeader title="Chamados de manutenção" description="Abertos pelos inquilinos no portal"/>
-        <DataTable rows={tickets} columns={ticketColumns} rowKey={(t) => t.id} caption="Chamados de manutenção" cardTitle={(t) => (<div>
+        <DataTable rows={chamadosPg.items} columns={ticketColumns} rowKey={(t) => t.id} caption="Chamados de manutenção" cardTitle={(t) => (<div>
               <p className="font-medium">{t.titulo}</p>
               <p className="text-xs text-muted">{t.id} · {categoriaChamadoLabel[t.categoria]}</p>
             </div>)} empty={<EmptyState icon={Wrench} title="Nenhum chamado"/>}/>
+        <Pagination pagination={chamadosPg} basePath="/admin/contratos" query={query} paramName="paginaChamados" hash="chamados" itemLabel="chamados"/>
       </Card>
 
       <p className="mt-6 text-xs text-muted">
